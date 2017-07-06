@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -26,19 +25,16 @@ type FileTextExtractor struct {
 	path string
 }
 
-func removeAllPunctuation(rawText string) string {
-	r := regexp.MustCompile("[[:punct:]]")
-	indices := r.FindAllStringIndex(rawText, -1)
-	out := []byte(rawText)
-	for _, indexRange := range indices {
-		start := indexRange[0]
-		out[start] = byte(0)
+func removeNonWordChars(rawText string) string {
+	r := regexp.MustCompile(`\W`)
+	replaceWithSpace := func(string) string {
+		return " "
 	}
-	return string(out)
+	return r.ReplaceAllStringFunc(rawText, replaceWithSpace)
 }
 
 func (ex BasicTextExtractor) extract() string {
-	return removeAllPunctuation(ex.text)
+	return removeNonWordChars(ex.text)
 }
 
 func (ex URLTextExtractor) extract() string {
@@ -60,7 +56,7 @@ func (ex URLTextExtractor) extract() string {
 			buffer.WriteString(parser.Token().Data)
 		}
 	}
-	return removeAllPunctuation(buffer.String())
+	return removeNonWordChars(buffer.String())
 }
 
 func (ex FileTextExtractor) extract() string {
@@ -68,19 +64,14 @@ func (ex FileTextExtractor) extract() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return removeAllPunctuation(string(bytes))
+	return removeNonWordChars(string(bytes))
 }
 
 func GetWordCount(ex TextExtractor) map[string]int {
 	wordCountMap := make(map[string]int)
 
-	words := strings.Split(ex.extract(), " ")
+	words := regexp.MustCompile(`\s+`).Split(ex.extract(), -1)
 	for _, word := range words {
-		word = strings.TrimSpace(word)
-		if len(word) == 0 { // Skip blank strings.
-			continue
-		}
-
 		// If word is new, then add (word, 1).
 		// Otherwise, increment corresponding count by 1.
 		freq, prevSeenWord := wordCountMap[word]
