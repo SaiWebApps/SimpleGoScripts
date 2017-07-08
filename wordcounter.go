@@ -144,12 +144,16 @@ func GetAggregateWordCount(extractors []TextExtractor) map[string]int {
 
 func main() {
 	// Parse command-line arguments.
+	s := flag.String("s", "", "Generate word histogram for given string.")
 	u := flag.String("u", "", "Generate word histogram for given URL.")
 	f := flag.String("f", "", "Generate word histogram for given file path.")
 	flag.Parse()
 
 	// Construct TextExtractors from command-line arguments.
 	var extractors []TextExtractor
+	if len(*s) > 0 {
+		extractors = append(extractors, BasicTextExtractor{*s})
+	}
 	if len(*u) > 0 {
 		urlTokens := regexp.MustCompile(`\s+`).Split(*u, -1)
 		for _, url := range urlTokens {
