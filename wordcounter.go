@@ -72,6 +72,10 @@ func GetWordCount(ex TextExtractor) map[string]int {
 
 	words := regexp.MustCompile(`\s+`).Split(ex.extract(), -1)
 	for _, word := range words {
+		if len(word) == 0 { // Skip whitespaces.
+			continue
+		}
+
 		// If word is new, then add (word, 1).
 		// Otherwise, increment corresponding count by 1.
 		freq, prevSeenWord := wordCountMap[word]
@@ -86,13 +90,85 @@ func GetWordCount(ex TextExtractor) map[string]int {
 	return wordCountMap
 }
 
+func GetAggregateWordCount(extractors []TextExtractor) map[string]int {
+	resultMap := make(map[string]int)
+
+	// Channel for storing extractors' results on-the-go.
+	type WordCountPair struct {
+		word string
+		count int
+	}
+	wcpch := make(chan WordCountPair)
+	// Channel to keep track of which extractors are done.
+	numExtractors := len(extractors)
+	done := make(chan int, numExtractors)
+
+	// Initialize a goroutine/thread for each extractor; this thread
+	// shall write out each of the extractor's (word, count) pairs to wpch.
+	// Once it is done, it shall add an entry to the buffered channel, done.
+	for i, ex := range extractors {
+		go func() {
+			wcm := GetWordCount(ex)
+			for word, count := range wcm {
+				wcpch <- WordCountPair{word, count}
+			}
+			done <- i 
+		}()
+	}
+
+	// Monitor done. Once the number of values read from done equals the
+	// total number of extractors, we are finished and can close all channels.
+	go func() {
+		for i := 0; i < numExtractors; i++ {
+			<-done
+		}
+		close(done)
+		close(wcpch)
+	}()
+
+	// Read the latest (word, count) pair from the channel, and create/update
+	// the corresponding entry in resultMap.
+	for wcp := range wcpch {
+		currentCount, present := resultMap[wcp.word]
+		switch (present) {
+		// If word already exists, add received count to current count.
+		case true:
+			resultMap[wcp.word] = currentCount + wcp.count
+		// Otherwise, create an entry for word with received count.
+		default:
+			resultMap[wcp.word] = wcp.count
+		}
+	}
+	return resultMap
+}
+
 func main() {
-	const URL_ARG_HELP = "Generate word histogram for given URL."
-	const DEFAULT_URL = "https://sherlock-holm.es/stories/html/cnus.html"
-	url := flag.String("u", DEFAULT_URL, URL_ARG_HELP)
+	// Parse command-line arguments.
+	u := flag.String("u", "", "Generate word histogram for given URL.")
+	f := flag.String("f", "", "Generate word histogram for given file path.")
 	flag.Parse()
 
-	wcm := GetWordCount(URLTextExtractor{*url})
+	// Construct TextExtractors from command-line arguments.
+	var extractors []TextExtractor
+	if len(*u) > 0 {
+		urlTokens := regexp.MustCompile(`\s+`).Split(*u, -1)
+		for _, url := range urlTokens {
+			extractors = append(extractors, URLTextExtractor{url})
+		}
+	}
+	if len(*f) > 0 {
+		filePathTokens := regexp.MustCompile(`\s+`).Split(*f, -1)
+		for _, filePath := range filePathTokens {
+			extractors = append(extractors, FileTextExtractor{filePath})
+		}
+	}
+	// Error out if nothing was specified.
+	if len(extractors) == 0 {
+		log.Fatal("Please specify at least 1 URL or file path.")
+	}
+
+	// Get aggregate word counts for all specified extractors.
+	wcm := GetAggregateWordCount(extractors)
 	for word, count := range wcm {
 		fmt.Printf("%s: %d\n", word, count)
 	}
