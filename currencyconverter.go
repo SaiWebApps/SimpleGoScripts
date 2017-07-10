@@ -50,8 +50,8 @@ func (parser *HTMLParser) parseTillEndTag(tag string) {
 	parser.parse()
 }
 
-func GetValidDenominations() []string {
-	var validDenom []string
+func GetValidDenominations() map[string]string {
+	validDenom := make(map[string]string)
 
 	parser := &HTMLParser{Url: "http://www.google.com/finance/converter"}
 	parser.HandleToken = func() {
@@ -60,7 +60,8 @@ func GetValidDenominations() []string {
 		case current.Type == html.StartTagToken && current.Data == "option":
 			for _, a := range current.Attr {
 				if a.Key == "value" {
-					validDenom = append(validDenom, a.Val)
+					parser.Tokenizer.Next() // Read the next token.
+					validDenom[a.Val] = parser.Tokenizer.Token().Data
 					break
 				}
 			}
@@ -71,14 +72,40 @@ func GetValidDenominations() []string {
 	return validDenom
 }
 
-func AreDenominationsValid(possibleDenom ...string) bool {
-	validDenom := strings.Join(GetValidDenominations(), "")
-	for _, denom := range possibleDenom {
-		if !strings.Contains(validDenom, denom) {
-			return false
+func ValidateDenominations(inputs ...string) []string {
+	// Create []string with all-lowercase, trimmed versions of inputs.
+	numInputs := len(inputs)
+	processedInputs := make([]string, 0, numInputs)
+	for _, input := range inputs {
+		processedVal := strings.ToLower(strings.TrimSpace(input))
+		if len(processedVal) == 0 {
+			log.Fatal("Invalid denomination specified!")
 		}
+		processedInputs = append(processedInputs, processedVal)
 	}
-	return true
+
+	// For each processed input string, try to find a matching short or
+	// long name in the set of valid denominations.
+	allValidDenoms := GetValidDenominations()
+	specifiedDenoms := make([]string, 0, numInputs)
+	for _, in := range processedInputs {
+		var target *string = nil
+		for shortName, longName := range allValidDenoms {
+			sn, ln := strings.ToLower(shortName), strings.ToLower(longName)
+			// Check for strict match with short or loose with long.
+			if sn == in || strings.Contains(ln, in) {
+				target = &shortName
+				break
+			}
+		}
+		// Error out if we can't find a match.
+		if target == nil {
+			log.Fatalf("Invalid denomination: %s!", in)
+		}
+		// Otherwise, add match's shortName to specifiedDenoms.
+		specifiedDenoms = append(specifiedDenoms, *target)
+	}
+	return specifiedDenoms
 }
 
 func Convert(amt int, from, to string) string {
@@ -109,19 +136,24 @@ func main() {
 	amount := flag.Int("a", 1, "Amount being converted.")
 	from := flag.String("f", "", "Denomination we are converting from.")
 	to := flag.String("t", "", "Denomination we are converting to.")
+	listDenom := flag.Bool("l", false, "List all valid denominations.")
 	flag.Parse()
 
-	// Remove leading/trailing whitespace from "from" and "to."
-	f, t := strings.TrimSpace(*from), strings.TrimSpace(*to)
+	// "-l" takes precedence over all other flags.
+	switch (*listDenom) {
+	case true:
+		for shortName, longName := range GetValidDenominations() {
+			fmt.Printf("%s: %s\n", shortName, longName)
+		}
 
-	// Validate parameters.
-	if (*amount < 0) {
-		log.Fatal("Amount cannot be negative!")
+	default:
+		// Validate parameters.
+		if (*amount < 0) {
+			log.Fatal("Amount cannot be negative!")
+		}
+		validated := ValidateDenominations(*from, *to)
+		f, t := validated[0], validated[1]
+		// Perform conversion, and print result.
+		fmt.Printf("%d %s = %s %s\n", *amount, f, Convert(*amount, f, t), t)
 	}
-	if !AreDenominationsValid(f, t) {
-		log.Fatal("From/To denominations are invalid!")
-	}
-
-	// Perform conversion, and print result.
-	fmt.Printf("%d %s = %s %s\n", *amount, f, Convert(*amount, f, t), t)
 }

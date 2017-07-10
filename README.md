@@ -52,10 +52,14 @@ go run currencyconverter.go [-a AMOUNT] [-f FROM_DENOM] [-t TO_DENOM]
 -a: Positive amount of money in FROM_DENOM to convert to TO_DENOM. Default is 1.
 -f: Denomination of AMOUNT; the denomination that we are converting from.
 -to: Denomination that AMOUNT, specified in FROM_DENOM, is being converted to.
--l: List all valid denominations.
+-l: List valid short and long names for FROM_DENOM and TO_DENOM denominations.
 ```
 For example
 ```
 go run currencyconverter.go -f USD -to EUR
 ```
-shall convert 1 US Dollar to Euros. For your edification, you can use **-l** to list all possible **-f**/**-t** denominations; in this scenario, all other flags shall be ignored.
+shall convert 1 US Dollar to Euros.
+
+When **-l** is specified, it shall take precedence over all other parameters, and the script, in turn, shall display an informational message on acceptable values for **-f** and **-t**.
+
+Said informational message shall consist of lines of colon-delimited strings, wherein the left-hand-side of each string is a valid short denomination name, and the right-hand-side is a valid long denomination name. Values specified to **-f** and **-t** shall either exactly match one of the aforementioned short names OR shall be contained within one of the long names.  
