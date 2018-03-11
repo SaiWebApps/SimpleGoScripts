@@ -2,7 +2,7 @@
 
 This package contains a collection of golang scripts that I constructed while familiarizing myself with the language.
 
-## [hellobot.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/hellobot.go)
+## [hellobot.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/hellobot/hellobot.go)
 
 Say "Hello" to the specified subject.
 ```
@@ -13,7 +13,7 @@ go run hellobot.go [-i] [-to SUBJECT]
 If neither flag is specified, then this bot shall say "Hello" to "World."
 On the other hand, if both flags are specified, then **-i** shall take precedence, and **-to** shall be ignored.
 
-## [pascalstriangle.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/pascalstriangle.go)
+## [pascalstriangle.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/pascalstriangle/pascalstriangle.go)
 
 Generate Pascal's Triangle for the specified number of levels.
 ```
@@ -21,7 +21,7 @@ go run pascalstriangle.go [-n NUM_LEVELS]
 -n: Positive integer representing the number of levels of the target Pascal's Triangle. Default value is 1.
 ```
 
-## [primenumbers.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/primenumbers.go)
+## [primenumbers.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/primenumbers/primenumbers.go)
 
 Compute prime numbers up to the specified integer ceiling through the [Sieve-of-Eratosthenes](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes) heuristic.
 ```
@@ -29,7 +29,7 @@ go run primenumbers.go [-n CEILING]
 -n: Generate prime numbers up to and including this non-negative integer. Default value is 1.
 ```
 
-## [wordcounter.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/wordcounter.go)
+## [wordcounter.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/wordcounter/wordcounter.go)
 
 Generate a word histogram for the specified string, file, and/or URL.
 ```
@@ -44,7 +44,7 @@ For any combination of these flags, this script shall:
 3. identify the words, which are presumably separated by whitespaces (\s+),
 4. and calculate the number of times that each word occurs in total across all of the source texts.
 
-## [currencyconverter.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/currencyconverter.go)
+## [currencyconverter.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/currencyconverter/currencyconverter.go)
 
 Perform currency conversions via command-line by leveraging Google Finance's Currency Converter Tool.
 ```
@@ -64,7 +64,7 @@ When **-l** is specified, it shall take precedence over all other parameters, an
 
 Said informational message shall consist of lines of colon-delimited strings, wherein the left-hand-side of each string is a valid short denomination name, and the right-hand-side is a valid long denomination name. Values specified to **-f** and **-t** shall either exactly match one of the aforementioned short names OR shall be contained within one of the long names.
 
-## [sayhellowebapp.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/sayhellowebapp.go)
+## [sayhellowebapp.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/sayhellowebapp/sayhellowebapp.go)
 
 "Hello World" Golang Web Application
 1. go run sayhellowebapp.go
