@@ -3,25 +3,27 @@ package main
 import (
 	"flag"
 	"fmt"
-	"golang.org/x/net/html"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
+// HTMLParser loads and stores the HTML from a specified URL.
 type HTMLParser struct {
-	Url string
-	Tokenizer *html.Tokenizer
+	URL         string
+	Tokenizer   *html.Tokenizer
 	HandleToken func()
-	Stop func() bool
+	Stop        func() bool
 }
 
 func (parser *HTMLParser) parse() {
 	// Connect to URL.
-	const DEFAULT_TIMEOUT = 30 * time.Second
-	httpClient := &http.Client{Timeout: DEFAULT_TIMEOUT}
-	response, err := httpClient.Get(parser.Url)
+	const DefaultTimeout = 30 * time.Second
+	httpClient := &http.Client{Timeout: DefaultTimeout}
+	response, err := httpClient.Get(parser.URL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,10 +52,12 @@ func (parser *HTMLParser) parseTillEndTag(tag string) {
 	parser.parse()
 }
 
+// GetValidDenominations returns a map with denominations' short names
+// as keys and long names as values.
 func GetValidDenominations() map[string]string {
 	validDenom := make(map[string]string)
 
-	parser := &HTMLParser{Url: "http://www.google.com/finance/converter"}
+	parser := &HTMLParser{URL: "http://www.google.com/finance/converter"}
 	parser.HandleToken = func() {
 		current := parser.Tokenizer.Token()
 		switch {
@@ -72,6 +76,8 @@ func GetValidDenominations() map[string]string {
 	return validDenom
 }
 
+// ValidateDenominations returns a slice with all of the valid denominations
+// that the user specified in the input slice.
 func ValidateDenominations(inputs ...string) []string {
 	// Create []string with all-lowercase, trimmed versions of inputs.
 	numInputs := len(inputs)
@@ -89,7 +95,7 @@ func ValidateDenominations(inputs ...string) []string {
 	allValidDenoms := GetValidDenominations()
 	specifiedDenoms := make([]string, 0, numInputs)
 	for _, in := range processedInputs {
-		var target *string = nil
+		var target *string
 		for shortName, longName := range allValidDenoms {
 			sn, ln := strings.ToLower(shortName), strings.ToLower(longName)
 			// Check for strict match with short or loose with long.
@@ -108,10 +114,11 @@ func ValidateDenominations(inputs ...string) []string {
 	return specifiedDenoms
 }
 
+// Convert converts the specified amount from one denomination to another.
 func Convert(amt int, from, to string) string {
-	const URL = "http://www.google.com/finance/converter"
-	url := fmt.Sprintf("%s?a=%d&from=%s&to=%s", URL, amt, from, to)
-	parser := &HTMLParser{Url: url}
+	const BaseURL = "http://www.google.com/finance/converter"
+	url := fmt.Sprintf("%s?a=%d&from=%s&to=%s", BaseURL, amt, from, to)
+	parser := &HTMLParser{URL: url}
 
 	var result string
 	parser.HandleToken = func() {
@@ -129,7 +136,7 @@ func Convert(amt int, from, to string) string {
 	}
 	parser.parseTillEndTag("span")
 	return strings.TrimSpace(strings.Replace(result, to, "", -1))
-} 
+}
 
 func main() {
 	// Process command-line arguments.
@@ -140,7 +147,7 @@ func main() {
 	flag.Parse()
 
 	// "-l" takes precedence over all other flags.
-	switch (*listDenom) {
+	switch *listDenom {
 	case true:
 		for shortName, longName := range GetValidDenominations() {
 			fmt.Printf("%s: %s\n", shortName, longName)
@@ -148,7 +155,7 @@ func main() {
 
 	default:
 		// Validate parameters.
-		if (*amount < 0) {
+		if *amount < 0 {
 			log.Fatal("Amount cannot be negative!")
 		}
 		validated := ValidateDenominations(*from, *to)

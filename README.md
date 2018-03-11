@@ -64,9 +64,9 @@ When **-l** is specified, it shall take precedence over all other parameters, an
 
 Said informational message shall consist of lines of colon-delimited strings, wherein the left-hand-side of each string is a valid short denomination name, and the right-hand-side is a valid long denomination name. Values specified to **-f** and **-t** shall either exactly match one of the aforementioned short names OR shall be contained within one of the long names.
 
-## [sayhello_webapp.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/sayhello_webapp.go)
+## [sayhellowebapp.go](https://github.com/SaiWebApps/SimpleGoScripts/blob/master/sayhellowebapp.go)
 
 "Hello World" Golang Web Application
-1. go run sayhello_webapp.go
+1. go run sayhellowebapp.go
 2. Open up a web browser, and navigate to http://localhost:8080/. The page should display the default "Hello World" message.
 3. To specify a different subject to say hello to, simply add the desired subject's name after the final "/" in http://localhost:8080/. For example, "http://localhost:8080/me" would result in the message "Hello me!".

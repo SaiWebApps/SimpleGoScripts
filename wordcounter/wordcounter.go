@@ -4,23 +4,32 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"golang.org/x/net/html"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
+// TextExtractor is an interface with an "extract" function that processes
+// and refines text from some source.
 type TextExtractor interface {
 	extract() string
 }
+
+// BasicTextExtractor is an extension of TextExtractor for raw strings.
 type BasicTextExtractor struct {
 	text string
 }
+
+// URLTextExtractor is an extension of TextExtractor for a URL.
 type URLTextExtractor struct {
 	url string
 }
+
+// FileTextExtractor is an extension of TextExtractor for a file path.
 type FileTextExtractor struct {
 	path string
 }
@@ -39,8 +48,8 @@ func (ex BasicTextExtractor) extract() string {
 
 func (ex URLTextExtractor) extract() string {
 	// Connect to URL.
-	const DEFAULT_TIMEOUT = 30 * time.Second
-	httpClient := &http.Client{Timeout: DEFAULT_TIMEOUT}
+	const DefaultTimeout = 30 * time.Second
+	httpClient := &http.Client{Timeout: DefaultTimeout}
 	response, err := httpClient.Get(ex.url)
 	if err != nil {
 		log.Fatal(err)
@@ -67,6 +76,9 @@ func (ex FileTextExtractor) extract() string {
 	return removeNonWordChars(string(bytes))
 }
 
+// GetWordCount returns a map where each key is a word found in the
+// input TextExtractor's processed/refined text, and each value is
+// the key's corresponding frequency in said text.
 func GetWordCount(ex TextExtractor) map[string]int {
 	wordCountMap := make(map[string]int)
 
@@ -79,7 +91,7 @@ func GetWordCount(ex TextExtractor) map[string]int {
 		// If word is new, then add (word, 1).
 		// Otherwise, increment corresponding count by 1.
 		freq, prevSeenWord := wordCountMap[word]
-		switch (prevSeenWord) {
+		switch prevSeenWord {
 		case true:
 			wordCountMap[word] = freq + 1
 		default:
@@ -90,12 +102,14 @@ func GetWordCount(ex TextExtractor) map[string]int {
 	return wordCountMap
 }
 
+// GetAggregateWordCount applies GetWordCount to each TextExtractor in a given
+// slice and aggregates all of the results into a single word-count map.
 func GetAggregateWordCount(extractors []TextExtractor) map[string]int {
 	resultMap := make(map[string]int)
 
 	// Channel for storing extractors' results on-the-go.
 	type WordCountPair struct {
-		word string
+		word  string
 		count int
 	}
 	wcpch := make(chan WordCountPair)
@@ -112,7 +126,7 @@ func GetAggregateWordCount(extractors []TextExtractor) map[string]int {
 			for word, count := range wcm {
 				wcpch <- WordCountPair{word, count}
 			}
-			done <- i 
+			done <- i
 		}()
 	}
 
@@ -130,7 +144,7 @@ func GetAggregateWordCount(extractors []TextExtractor) map[string]int {
 	// the corresponding entry in resultMap.
 	for wcp := range wcpch {
 		currentCount, present := resultMap[wcp.word]
-		switch (present) {
+		switch present {
 		// If word already exists, add received count to current count.
 		case true:
 			resultMap[wcp.word] = currentCount + wcp.count
