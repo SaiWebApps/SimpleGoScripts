@@ -20,7 +20,7 @@ func New2D(nr, nc int) (*IntMatrix2D, error) {
 	im2d := new(IntMatrix2D)
 	im2d.nrows, im2d.ncols = nr, nc
 	im2d.mat = make([][]int, nr)
-	for i := 0; i < nc; i++ {
+	for i := 0; i < nr; i++ {
 		im2d.mat[i] = make([]int, nc)
 	}
 	return im2d, nil
@@ -80,7 +80,7 @@ func (m *IntMatrix2D) Set(i, j int, val int) (int, error) {
 		return 0, fmt.Errorf("[Nil 2D Matrix]: Cannot set (%d,%d)", i, j)
 	}
 	origVal, err := m.At(i, j)
-	if err != nil {
+	if err == nil { // If (i,j) is a valid location, then update its value.
 		m.mat[i][j] = val
 	}
 	return origVal, err
