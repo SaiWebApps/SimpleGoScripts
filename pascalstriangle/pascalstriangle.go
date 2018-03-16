@@ -13,15 +13,6 @@ type PascalsTriangle struct {
 	triangle  [][]int
 }
 
-// InvalidPTDimError is raised when users try to initialize a
-// Pascal's Triangle with an invalid number of levels.
-type InvalidPTDimError int
-
-func (err InvalidPTDimError) Error() string {
-	const ErrMsg = "Invalid number of levels: %d is not positive."
-	return fmt.Sprintf(ErrMsg, err)
-}
-
 // Helper/Private Methods
 func (t *PascalsTriangle) init() {
 	// Calculate underlying matrix's dimensions.
@@ -41,7 +32,7 @@ func (t *PascalsTriangle) init() {
 // an InvalidPTDimError if n is not positive.
 func (t *PascalsTriangle) Generate(n int) error {
 	if n <= 0 {
-		return InvalidPTDimError(n)
+		return fmt.Errorf("[NegativeNumLevels]: %d", n)
 	}
 
 	t.numLevels = n
