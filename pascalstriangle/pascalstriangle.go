@@ -1,87 +1,45 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"strconv"
+	"simplegoscripts/intmatrix"
 )
 
-// PascalsTriangle represents N-level Pascal's Triangle.
-type PascalsTriangle struct {
-	numLevels int
-	triangle  [][]int
+func initPascalsTriangle(numLevels int) (*intmatrix.IntMatrix2D, error) {
+	numCols := 2*(numLevels-1) + 1
+	pt, err := intmatrix.New2D(numLevels, numCols)
+	if err != nil {
+		return pt, err
+	}
+	_, err = pt.Set(0, numCols/2, 1)
+	return pt, err
 }
 
-// Helper/Private Methods
-func (t *PascalsTriangle) init() {
-	// Calculate underlying matrix's dimensions.
-	numRows := t.numLevels
-	numCols := 2*numRows + 1
-
-	// Initialize underlying matrix accordingly.
-	t.triangle = make([][]int, numRows)
-	for r := 0; r < numRows; r++ {
-		t.triangle[r] = make([]int, numCols)
+// Generate shall create a Pascal's Triangle with numLevels-levels
+// for numLevels >= 1.
+func Generate(numLevels int) (*intmatrix.IntMatrix2D, error) {
+	if numLevels < 1 {
+		return nil, fmt.Errorf("[NegativeNumLevels]: %d", numLevels)
 	}
-	// 1st row shall contain 1 in middle column.
-	t.triangle[0][numCols/2] = 1
-}
-
-// Generate shall create a n-level Pascal's triangle or return
-// an InvalidPTDimError if n is not positive.
-func (t *PascalsTriangle) Generate(n int) error {
-	if n <= 0 {
-		return fmt.Errorf("[NegativeNumLevels]: %d", n)
+	pt, err := initPascalsTriangle(numLevels)
+	if err != nil {
+		return pt, err
 	}
+	numRows, numCols := pt.GetDimensions()
 
-	t.numLevels = n
-	t.init()
-
-	for r := 1; r < t.numLevels; r++ {
-		midpoint := len(t.triangle[r]) / 2
-		start := midpoint - r
-		end := midpoint + r
-
-		// Each row shall start and end with 1.
-		t.triangle[r][midpoint-r] = 1
-		t.triangle[r][midpoint+r] = 1
-
-		// Every 2 spaces between start and end inclusive shall be
-		// the sum of the top left and top right values from that space.
-		for c := start + 2; c < end-1; c += 2 {
-			topLeft := t.triangle[r-1][c-1]
-			topRight := t.triangle[r-1][c+1]
-			t.triangle[r][c] = topLeft + topRight
+	mid := numCols / 2
+	for r := 1; r < numRows; r++ {
+		start, end := mid-r, mid+r
+		pt.Set(r, start, 1)
+		pt.Set(r, end, 1)
+		for c := start + 2; c < end; c += 2 {
+			diagLeft, _ := pt.At(r-1, c-1)
+			diagRight, _ := pt.At(r-1, c+1)
+			pt.Set(r, c, diagLeft+diagRight)
 		}
 	}
-
-	return nil
-}
-
-func (t PascalsTriangle) String() string {
-	var buffer bytes.Buffer
-	triangle := t.triangle
-	numRows := t.numLevels
-
-	const HEADER = "Printing Pascals Triangle with %d levels\n"
-	buffer.WriteString(fmt.Sprintf(HEADER, numRows))
-
-	for r := 0; r < numRows; r++ {
-		numCols := len(triangle[r])
-
-		for c := 0; c < numCols; c++ {
-			val := triangle[r][c]
-			if val == 0 {
-				buffer.WriteString(" ")
-				continue
-			}
-			buffer.WriteString(strconv.Itoa(val))
-		}
-		buffer.WriteString("\n")
-	}
-
-	return buffer.String()
+	return pt, nil
 }
 
 // Main Function
@@ -90,12 +48,11 @@ func main() {
 	flag.IntVar(&numLevels, "n", 1, "Number of levels in PascalsTriangle.")
 	flag.Parse()
 
-	pt := &PascalsTriangle{}
-	err := pt.Generate(numLevels)
+	pt, err := Generate(numLevels)
 	switch {
-	case (err != nil): // There was an error.
+	case err != nil:
 		fmt.Println(err)
-	default: // No errors encountered
-		fmt.Print(pt)
+	default:
+		fmt.Println(pt)
 	}
 }
